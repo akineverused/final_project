@@ -1,0 +1,157 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum FieldType {
+  STRING
+  TEXT
+  NUMBER
+  DATE
+  BOOLEAN
+}
+
+model User {
+  id          Int       @id @default(autoincrement())
+  email       String    @unique
+  password    String
+  role        Role      @default(USER)
+  blocked     Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  inventories Inventory[]
+  items       Item[]
+  comments    Comment[]
+  likes       Like[]
+  accessList  InventoryAccess[]
+}
+
+model Inventory {
+  id               Int       @id @default(autoincrement())
+  title            String
+  description      String?
+  category         String
+  isPublic         Boolean   @default(false)
+  version          Int       @default(1)
+  createdAt        DateTime  @default(now())
+
+  // для sequence Custom ID
+  sequenceCounter  Int       @default(0)
+
+  // конфигурация Custom ID
+  customIdConfig   Json?
+
+  ownerId          Int
+  owner            User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  items            Item[]
+  fields           CustomField[]
+  accessList       InventoryAccess[]
+  comments         Comment[]
+  tags InventoryTag[]
+  imageUrl String?
+}
+
+model InventoryAccess {
+  id          Int       @id @default(autoincrement())
+
+  userId      Int
+  inventoryId Int
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inventory   Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, inventoryId])
+}
+
+model Item {
+  id          Int       @id @default(autoincrement())
+  customId    String
+  version     Int       @default(1)
+  createdAt   DateTime  @default(now())
+
+  inventoryId Int
+  inventory   Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+
+  createdById Int
+  createdBy   User      @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  likes       Like[]
+  fieldValues ItemFieldValue[]
+
+  @@unique([inventoryId, customId])
+}
+
+model CustomField {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String?
+  type        FieldType
+  showInTable Boolean   @default(false)
+  order       Int
+
+  inventoryId Int
+  inventory   Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+
+  values      ItemFieldValue[]
+}
+
+model Like {
+  id      Int  @id @default(autoincrement())
+
+  userId  Int
+  itemId  Int
+
+  user    User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item    Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemId])
+}
+
+model Comment {
+  id          Int       @id @default(autoincrement())
+  content     String
+  createdAt   DateTime  @default(now())
+
+  userId      Int
+  inventoryId Int
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inventory   Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+}
+
+model ItemFieldValue {
+  id            Int    @id @default(autoincrement())
+  value         String
+
+  itemId        Int
+  customFieldId Int
+
+  item        Item        @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  customField CustomField @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
+}
+
+model Tag {
+  id        Int         @id @default(autoincrement())
+  name      String      @unique
+  inventories InventoryTag[]
+}
+
+model InventoryTag {
+  inventoryId Int
+  tagId       Int
+
+  inventory Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+  tag       Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([inventoryId, tagId])
+}
