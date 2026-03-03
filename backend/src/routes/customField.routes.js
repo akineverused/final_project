@@ -21,45 +21,31 @@ router.put("/:inventoryId", async (req, res) => {
     const { fields } = req.body;
 
     try {
+        // Проверка ограничения на количество полей одного типа
+        const typeCount = {};
+        for (const field of fields) {
+            typeCount[field.type] = (typeCount[field.type] || 0) + 1;
+            if (typeCount[field.type] > 3) {
+                return res.status(400).json({ message: "Maximum 3 fields per type allowed" });
+            }
+        }
+
         await prisma.$transaction(async (tx) => {
-            const existing = await tx.customField.findMany({
-                where: { inventoryId }
-            });
+            const existing = await tx.customField.findMany({ where: { inventoryId } });
 
             const existingIds = existing.map(f => f.id);
-            const incomingIds = fields
-                .filter(f => f.id)
-                .map(f => f.id);
+            const incomingIds = fields.filter(f => f.id).map(f => f.id);
 
-            // 1️⃣ DELETE
-            const toDelete = existingIds.filter(
-                id => !incomingIds.includes(id)
-            );
-
+            // 1️⃣ DELETE отсутствующие
+            const toDelete = existingIds.filter(id => !incomingIds.includes(id));
             if (toDelete.length) {
-                await tx.customField.deleteMany({
-                    where: {
-                        id: { in: toDelete }
-                    }
-                });
+                await tx.customField.deleteMany({ where: { id: { in: toDelete } } });
             }
 
-            // 2️⃣ UPDATE + CREATE
+            // 2️⃣ CREATE новые поля
             for (let i = 0; i < fields.length; i++) {
                 const field = fields[i];
-
-                if (field.id) {
-                    // UPDATE
-                    await tx.customField.update({
-                        where: { id: field.id },
-                        data: {
-                            title: field.title,
-                            type: field.type,
-                            order: i + 1
-                        }
-                    });
-                } else {
-                    // CREATE
+                if (!field.id) {
                     await tx.customField.create({
                         data: {
                             title: field.title,
@@ -70,6 +56,27 @@ router.put("/:inventoryId", async (req, res) => {
                         }
                     });
                 }
+            }
+
+            // 3️⃣ UPDATE существующих — временно присваиваем уникальные отрицательные order
+            const updates = fields.filter(f => f.id);
+            for (let i = 0; i < updates.length; i++) {
+                await tx.customField.update({
+                    where: { id: updates[i].id },
+                    data: { order: -(i + 1) } // временные уникальные значения
+                });
+            }
+
+            // 4️⃣ Присваиваем финальные порядки
+            for (let i = 0; i < updates.length; i++) {
+                await tx.customField.update({
+                    where: { id: updates[i].id },
+                    data: {
+                        title: updates[i].title,
+                        type: updates[i].type,
+                        order: i + 1
+                    }
+                });
             }
         });
 

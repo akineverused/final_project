@@ -21,7 +21,6 @@ app.use("/api/custom-fields", customFieldRoutes);
 app.use("/api/items", itemRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/home", homeRoutes);
-app.use("/api/home", homeRoutes);
 app.use("/api/search", searchRoutes);
 
 app.get("/api/health", (req, res) => {

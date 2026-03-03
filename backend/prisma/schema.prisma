@@ -16,7 +16,7 @@ enum FieldType {
   STRING
   TEXT
   NUMBER
-  DATE
+  LINK
   BOOLEAN
 }
 
@@ -103,6 +103,9 @@ model CustomField {
   inventory   Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
 
   values      ItemFieldValue[]
+
+  @@unique([inventoryId, order])
+  @@index([inventoryId])
 }
 
 model Like {
@@ -130,14 +133,20 @@ model Comment {
 }
 
 model ItemFieldValue {
-  id            Int    @id @default(autoincrement())
-  value         String
+  id            Int     @id @default(autoincrement())
+
+  stringValue   String?
+  numberValue   Float?
+  booleanValue  Boolean?
 
   itemId        Int
   customFieldId Int
 
   item        Item        @relation(fields: [itemId], references: [id], onDelete: Cascade)
   customField CustomField @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, customFieldId])
+  @@index([itemId])
 }
 
 model Tag {

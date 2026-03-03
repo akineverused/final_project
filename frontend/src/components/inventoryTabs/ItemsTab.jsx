@@ -1,9 +1,9 @@
 import { Table, Button } from "antd";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios";
-import {useContext, useState} from "react";
-import {AuthContext} from "../../context/AuthContext.jsx";
-import {LanguageContext} from "../../context/LanguageContext.jsx";
+import { useContext, useState } from "react";
+import { AuthContext } from "../../context/AuthContext.jsx";
+import { LanguageContext } from "../../context/LanguageContext.jsx";
 
 const ItemsTab = ({ inventory, refresh, isOwner }) => {
     const navigate = useNavigate();
@@ -34,6 +34,18 @@ const ItemsTab = ({ inventory, refresh, isOwner }) => {
         }
     };
 
+    const getFieldValue = (valueObj) => {
+        if (!valueObj) return "";
+
+        if (valueObj.stringValue !== null) return valueObj.stringValue;
+        if (valueObj.textValue !== null) return valueObj.textValue;
+        if (valueObj.numberValue !== null) return valueObj.numberValue;
+        if (valueObj.booleanValue !== null)
+            return valueObj.booleanValue ? "Yes" : "No";
+
+        return "";
+    };
+
     const getColumns = () => {
         const baseColumn = [
             {
@@ -51,14 +63,12 @@ const ItemsTab = ({ inventory, refresh, isOwner }) => {
                     const value = record.fieldValues.find(
                         v => v.customFieldId === field.id
                     );
-                    return value ? value.value : "";
+                    return getFieldValue(value);
                 }
             }));
 
         return [...baseColumn, ...dynamicColumns];
     };
-
-    console.log(isManager, isOwner, inventory.isPublic)
 
     return (
         <>
@@ -84,12 +94,13 @@ const ItemsTab = ({ inventory, refresh, isOwner }) => {
                     </Button>
                 </>
             )}
+
             <Table
                 rowKey="id"
                 columns={getColumns()}
                 dataSource={inventory.items}
                 rowSelection={canWrite && rowSelection}
-                onRow={(record) =>  ({
+                onRow={(record) => ({
                     onClick: () => navigate(`/items/${record.id}`)
                 })}
             />

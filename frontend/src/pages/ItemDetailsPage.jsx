@@ -1,9 +1,10 @@
 import { useEffect, useState, useContext } from "react";
-import { Form, Input, Button, message, Switch, DatePicker } from "antd";
+import { Form, Input, Button, message, Switch, InputNumber } from "antd";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../api/axios";
-import dayjs from "dayjs";
 import { AuthContext } from "../context/AuthContext";
+
+const { TextArea } = Input;
 
 const ItemDetailsPage = () => {
     const { id } = useParams();
@@ -33,18 +34,14 @@ const ItemDetailsPage = () => {
             setLiked(likesRes.data.liked);
 
             const initialValues = {};
-
             itemRes.data.fieldValues.forEach(fv => {
                 const field = fv.customField;
                 const key = `field_${field.id}`;
 
-                if (field.type === "boolean") {
-                    initialValues[key] = fv.value === "true";
-                } else if (field.type === "date") {
-                    initialValues[key] = fv.value ? dayjs(fv.value) : null;
-                } else {
-                    initialValues[key] = fv.value;
-                }
+                // Теперь все текстовые хранятся в stringValue
+                if (fv.booleanValue !== null) initialValues[key] = fv.booleanValue;
+                else if (fv.numberValue !== null) initialValues[key] = fv.numberValue;
+                else if (fv.stringValue !== null) initialValues[key] = fv.stringValue;
             });
 
             form.setFieldsValue(initialValues);
@@ -60,7 +57,6 @@ const ItemDetailsPage = () => {
         (
             item.inventory.ownerId === user?.id ||
             user?.role === "ADMIN" ||
-            item.inventory.isPublic ||
             item.inventory.accessList?.some(a => a.userId === user?.id)
         );
 
@@ -81,19 +77,28 @@ const ItemDetailsPage = () => {
     };
 
     const onFinish = async (values) => {
-        const formattedValues = Object.keys(values).map(key => ({
-            customFieldId: Number(key.replace("field_", "")),
-            value: values[key] instanceof Object && values[key]?.toISOString
-                ? values[key].toISOString()
-                : values[key]
-        }));
+        const formattedValues = item.fieldValues.map(fv => {
+            const field = fv.customField;
+            const key = `field_${field.id}`;
+            const value = values[key] ?? null;
 
-        await api.put(`/items/${id}`, {
-            values: formattedValues
+            return {
+                id: fv.id, // если нужно для апдейта
+                customFieldId: field.id,
+                stringValue: field.type === "STRING" || field.type === "TEXT" ? value : null,
+                numberValue: field.type === "NUMBER" ? value : null,
+                booleanValue: field.type === "BOOLEAN" ? value : null
+            };
         });
 
-        message.success("Item updated");
-        navigate(`/inventories/${item.inventoryId}`);
+        try {
+            await api.put(`/items/${id}`, { values: formattedValues });
+            message.success("Item updated");
+            navigate(`/inventories/${item.inventoryId}`);
+        } catch (err) {
+            console.error(err);
+            message.error("Failed to update item");
+        }
     };
 
     if (loading || !item) return <p>Loading...</p>;
@@ -102,66 +107,51 @@ const ItemDetailsPage = () => {
         <>
             <h2>{canWrite ? "Edit Item" : "View Item"}</h2>
 
-            {/* ❤️ Likes Section */}
+            {/* ❤️ Likes */}
             <div style={{ marginBottom: 20 }}>
                 <Button onClick={handleLike}>
                     {liked ? "❤️ Liked" : "🤍 Like"} ({likes})
                 </Button>
             </div>
 
-            <Form
-                layout="vertical"
-                form={form}
-                onFinish={canWrite ? onFinish : undefined}
-            >
+            <Form layout="vertical" form={form} onFinish={canWrite ? onFinish : undefined}>
                 {item.fieldValues.map(fv => {
                     const field = fv.customField;
                     const name = `field_${field.id}`;
 
-                    if (field.type === "boolean") {
+                    if (field.type === "BOOLEAN") {
                         return (
-                            <Form.Item
-                                key={field.id}
-                                name={name}
-                                label={field.title}
-                                valuePropName="checked"
-                            >
+                            <Form.Item key={field.id} name={name} label={field.title} valuePropName="checked">
                                 <Switch disabled={!canWrite} />
                             </Form.Item>
                         );
                     }
 
-                    if (field.type === "date") {
+                    if (field.type === "NUMBER") {
                         return (
-                            <Form.Item
-                                key={field.id}
-                                name={name}
-                                label={field.title}
-                            >
-                                <DatePicker
-                                    style={{ width: "100%" }}
-                                    disabled={!canWrite}
-                                />
+                            <Form.Item key={field.id} name={name} label={field.title}>
+                                <InputNumber style={{ width: "100%" }} disabled={!canWrite} />
                             </Form.Item>
                         );
                     }
 
+                    if (field.type === "TEXT") {
+                        return (
+                            <Form.Item key={field.id} name={name} label={field.title}>
+                                <TextArea rows={4} disabled={!canWrite} />
+                            </Form.Item>
+                        );
+                    }
+
+                    // STRING
                     return (
-                        <Form.Item
-                            key={field.id}
-                            name={name}
-                            label={field.title}
-                        >
+                        <Form.Item key={field.id} name={name} label={field.title}>
                             <Input disabled={!canWrite} />
                         </Form.Item>
                     );
                 })}
 
-                {canWrite && (
-                    <Button type="primary" htmlType="submit">
-                        Save
-                    </Button>
-                )}
+                {canWrite && <Button type="primary" htmlType="submit">Save</Button>}
             </Form>
         </>
     );

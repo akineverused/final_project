@@ -339,7 +339,7 @@ router.get("/:id/statistics", protect, async (req, res) => {
                     .flatMap(item =>
                         item.fieldValues
                             .filter(fv => fv.customFieldId === field.id)
-                            .map(fv => Number(fv.value))
+                            .map(fv => fv.numberValue)
                     )
                     .filter(v => !isNaN(v));
 
@@ -357,7 +357,7 @@ router.get("/:id/statistics", protect, async (req, res) => {
                     .flatMap(item =>
                         item.fieldValues
                             .filter(fv => fv.customFieldId === field.id)
-                            .map(fv => fv.value)
+                            .map(fv => fv.stringValue)
                     )
                     .filter(Boolean);
 

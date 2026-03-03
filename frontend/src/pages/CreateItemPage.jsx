@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { Form, Input, Button, message, Switch, DatePicker } from "antd";
+import { Form, Input, Button, message, Switch, InputNumber } from "antd";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../api/axios";
+
+const { TextArea } = Input;
 
 const CreateItemPage = () => {
     const { id } = useParams(); // inventoryId
@@ -18,9 +20,11 @@ const CreateItemPage = () => {
     };
 
     const onFinish = async (values) => {
+
         const formattedValues = fields.map(field => ({
             customFieldId: field.id,
-            value: values[`field_${field.id}`]
+            type: field.type,
+            value: values[`field_${field.id}`] ?? null
         }));
 
         await api.post("/items", {
@@ -40,7 +44,7 @@ const CreateItemPage = () => {
                 {fields.map(field => {
                     const name = `field_${field.id}`;
 
-                    if (field.type === "boolean") {
+                    if (field.type === "BOOLEAN") {
                         return (
                             <Form.Item
                                 key={field.id}
@@ -53,18 +57,33 @@ const CreateItemPage = () => {
                         );
                     }
 
-                    if (field.type === "date") {
+                    if (field.type === "NUMBER") {
                         return (
                             <Form.Item
                                 key={field.id}
                                 name={name}
                                 label={field.title}
                             >
-                                <DatePicker style={{ width: "100%" }} />
+                                <InputNumber
+                                    style={{ width: "100%" }}
+                                />
                             </Form.Item>
                         );
                     }
 
+                    // if (field.type === "TEXT") {
+                    //     return (
+                    //         <Form.Item
+                    //             key={field.id}
+                    //             name={name}
+                    //             label={field.title}
+                    //         >
+                    //             <TextArea rows={4} />
+                    //         </Form.Item>
+                    //     );
+                    // }
+
+                    // STRING (default)
                     return (
                         <Form.Item
                             key={field.id}

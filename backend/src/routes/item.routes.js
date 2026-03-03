@@ -33,7 +33,14 @@ router.post("/", protect, async (req, res) => {
 
             const sequenceNumber = updatedInventory.sequenceCounter;
 
-            const customId = generateCustomId(updatedInventory, sequenceNumber);
+            let customId;
+
+            if (!updatedInventory.customIdConfig || updatedInventory.customIdConfig.length === 0) {
+                // fallback если нет конфигурации
+                customId = `ITEM-${sequenceNumber}`;
+            } else {
+                customId = generateCustomId(updatedInventory, sequenceNumber);
+            }
 
             const item = await tx.item.create({
                 data: {
@@ -41,10 +48,36 @@ router.post("/", protect, async (req, res) => {
                     inventoryId,
                     createdById: req.user.id,
                     fieldValues: {
-                        create: values.map(v => ({
-                            customFieldId: v.customFieldId,
-                            value: String(v.value)
-                        }))
+                        create: values.map(v => {
+
+                            const base = {
+                                customFieldId: v.customFieldId
+                            };
+
+                            if (v.value === null || v.value === undefined || v.value === "") {
+                                return base; // ничего не сохраняем
+                            }
+
+                            if (v.type === "STRING" || v.type === "SELECT") {
+                                return { ...base, stringValue: v.value };
+                            }
+
+                            // if (v.type === "TEXT") {
+                            //     return { ...base, textValue: v.value };
+                            // }
+
+                            if (v.type === "NUMBER") {
+                                const num = Number(v.value);
+                                if (isNaN(num)) return base;
+                                return { ...base, numberValue: num };
+                            }
+
+                            if (v.type === "BOOLEAN") {
+                                return { ...base, booleanValue: v.value };
+                            }
+
+                            return base;
+                        })
                     }
                 },
                 include: { fieldValues: true }
@@ -57,8 +90,15 @@ router.post("/", protect, async (req, res) => {
 
     } catch (error) {
         console.error(error);
-        res.status(400).json({
-            message: "Custom ID conflict. Please edit manually."
+
+        if (error.code === "P2002") {
+            return res.status(400).json({
+                message: "Custom ID must be unique"
+            });
+        }
+
+        res.status(500).json({
+            message: "Failed to create item"
         });
     }
 });
@@ -81,11 +121,30 @@ router.put("/:id", protect, async (req, res) => {
     });
 
     await prisma.itemFieldValue.createMany({
-        data: values.map(v => ({
-            itemId,
-            customFieldId: v.customFieldId,
-            value: String(v.value)
-        }))
+        data: values.map(v => {
+            const base = {
+                itemId,
+                customFieldId: v.customFieldId
+            };
+
+            if (v.type === "STRING" || v.type === "SELECT") {
+                return { ...base, stringValue: v.value };
+            }
+
+            if (v.type === "TEXT") {
+                return { ...base, textValue: v.value };
+            }
+
+            if (v.type === "NUMBER") {
+                return { ...base, numberValue: Number(v.value) };
+            }
+
+            if (v.type === "BOOLEAN") {
+                return { ...base, booleanValue: Boolean(v.value) };
+            }
+
+            return base;
+        })
     });
 
     res.json({ message: "Item updated" });
