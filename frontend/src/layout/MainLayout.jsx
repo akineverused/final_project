@@ -19,16 +19,19 @@ const MainLayout = () => {
             label: t.profile,
             onClick: () => navigate(`/users/${user.id}`)
         },
-        ...(user.role === "ADMIN" && [
-            {
-                type: "divider"
-            },
-            {
-                key: "admin",
-                label: t.admin,
-                onClick: () => navigate("/admin")
-            }
-        ]),
+        ...(user.role === "ADMIN"
+                ? [
+                    {
+                        type: "divider"
+                    },
+                    {
+                        key: "admin",
+                        label: t.admin,
+                        onClick: () => navigate("/admin")
+                    }
+                ]
+                : []
+        ),
         {
             type: "divider"
         },
