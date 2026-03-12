@@ -15,4 +15,5 @@ export const sendVerificationEmail = async (email, token) => {
       <a href="${link}">${link}</a>
     `
     });
+    console.log("link: " + link);
 };
