@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Card, Row, Col } from "antd";
 import api from "../api/axios";
+import InventoryCard from "../components/InventoryCard.jsx";
 
 const SearchResultsPage = () => {
     const [searchParams] = useSearchParams();
     const [results, setResults] = useState([]);
-    const navigate = useNavigate();
 
     const query = searchParams.get("q");
 
@@ -28,13 +28,7 @@ const SearchResultsPage = () => {
             <Row gutter={[16, 16]}>
                 {results.map(inv => (
                     <Col span={6} key={inv.id}>
-                        <Card
-                            hoverable
-                            title={inv.title}
-                            onClick={() => navigate(`/inventories/${inv.id}`)}
-                        >
-                            {inv.description}
-                        </Card>
+                        <InventoryCard inventory={inv}/>
                     </Col>
                 ))}
             </Row>

@@ -3,6 +3,8 @@ import {useContext, useEffect, useState} from "react";
 import api from "../../api/axios";
 import {useNavigate} from "react-router-dom";
 import {LanguageContext} from "../../context/LanguageContext.jsx";
+import { Upload } from "antd";
+import { UploadOutlined } from "@ant-design/icons";
 
 const { TextArea } = Input;
 
@@ -11,16 +13,20 @@ const GeneralTab = ({ inventory, refresh }) => {
     const [tagOptions, setTagOptions] = useState([]);
     const {t} = useContext(LanguageContext);
     const navigate = useNavigate();
+    const [imageUrl, setImageUrl] = useState(inventory.imageUrl);
 
     useEffect(() => {
+
+        setImageUrl(inventory.imageUrl);
+
         form.setFieldsValue({
             title: inventory.title,
             description: inventory.description,
             category: inventory.category,
             isPublic: inventory.isPublic,
-            imageUrl: inventory.imageUrl,
             tags: inventory.tags?.map(t => t.tag.name) || []
         });
+
     }, [inventory]);
 
     const handleSearchTags = async (value) => {
@@ -40,6 +46,7 @@ const GeneralTab = ({ inventory, refresh }) => {
         try {
             await api.put(`/inventories/${inventory.id}`, {
                 ...values,
+                imageUrl,
                 version: inventory.version
             });
 
@@ -61,6 +68,22 @@ const GeneralTab = ({ inventory, refresh }) => {
         } catch (error){
             message.error("Fail");
         }
+    };
+
+    const handleUpload = async (file) => {
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const res = await api.post("/files/upload", formData, {
+            headers: { "Content-Type": "multipart/form-data" }
+        });
+
+        setImageUrl(res.data.url);
+
+        message.success("Image uploaded");
+
+        return false;
     };
 
     return (
@@ -95,11 +118,27 @@ const GeneralTab = ({ inventory, refresh }) => {
                 />
             </Form.Item>
 
-            <Form.Item
-                label={t.imageUrl}
-                name="imageUrl"
-            >
-                <Input placeholder={t.pasteImageUrl} />
+            <Form.Item label={t.imageUrl}>
+
+                <Upload
+                    beforeUpload={handleUpload}
+                    showUploadList={false}
+                >
+                    <Button icon={<UploadOutlined />}>
+                        Upload image
+                    </Button>
+                </Upload>
+
+                {imageUrl && (
+                    <div style={{ marginTop: 10 }}>
+                        <img
+                            src={imageUrl}
+                            alt="inventory"
+                            style={{ width: 200, borderRadius: 6 }}
+                        />
+                    </div>
+                )}
+
             </Form.Item>
 
             <Form.Item

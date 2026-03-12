@@ -1,6 +1,6 @@
 import React, {useContext} from 'react';
 import { useEffect, useState } from 'react';
-import { Button, Space, Table, Typography } from 'antd';
+import {Button, Space, Table, Tag, Typography, message } from 'antd';
 import api from "../api/axios.js";
 import {useNavigate} from "react-router-dom";
 import {AuthContext} from "../context/AuthContext.jsx";
@@ -23,8 +23,17 @@ export const UsersPage = () => {
         },
         {
             title: 'Status',
-            render: (_, record) =>
-                record.blocked ? 'Blocked' : 'Active'
+            render: (_, record) => {
+                if (record.blocked) {
+                    return <Tag color="red">Blocked</Tag>;
+                }
+
+                if (!record.verified) {
+                    return <Tag color="orange">Unverified</Tag>;
+                }
+
+                return <Tag color="green">Active</Tag>;
+            }
         },
         {
             title: 'Created',
@@ -47,6 +56,10 @@ export const UsersPage = () => {
         }
         setLoading(false);
     };
+    const refreshTable = async () => {
+        await loadUsers();
+        setSelectedRowKeys([]);
+    };
 
     const onBlock = async () => {
         await api.patch("/admin/users/block", {
@@ -54,7 +67,7 @@ export const UsersPage = () => {
         });
         if (selectedRowKeys.includes(user.id)){
             logout();
-        } else await loadUsers();
+        } else await refreshTable();;
         console.log('Users blocked');
     };
 
@@ -63,7 +76,7 @@ export const UsersPage = () => {
             ids: selectedRowKeys
         });
         console.log('Users unblocked');
-        await loadUsers();
+        await refreshTable();
     };
 
     const onDelete = async () => {
@@ -72,18 +85,55 @@ export const UsersPage = () => {
         });
         if (selectedRowKeys.includes(user.id)){
             logout();
-        } else await loadUsers();
+        } else await refreshTable();
         console.log('Users deleted');
     };
 
+    const onDeleteUnverified = async () => {
+        try {
+            await api.delete("/admin/users/unverified");
+            message.success("Unverified users deleted");
+            await refreshTable();
+        } catch (err) {
+            message.error(
+                err.response?.data?.message || "Failed to delete users"
+            );
+        }
+    };
+
+    const onMakeAdmin = async () => {
+        try {
+            await api.patch("/admin/users/make-admin", {
+                ids: selectedRowKeys
+            });
+            message.success("Users promoted to admin");
+            await refreshTable();
+        } catch (err) {
+            message.error("Failed to promote users");
+        }
+    };
+
+    const onRemoveAdmin = async () => {
+        try {
+            await api.patch("/admin/users/remove-admin", {
+                ids: selectedRowKeys
+            });
+            message.success("Admin rights removed");
+            await refreshTable();
+        } catch (err) {
+            message.error("Failed to remove admin rights");
+        }
+    };
+
     return (
-        <div style={{ padding: 24 }}>
+        <div>
             <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                marginBottom: 16
+                marginBottom: 16,
+
             }}>
-                <Title level={3}>User management</Title>
+                <Title level={3} style={{margin:0}}>User management</Title>
             </div>
 
             <Space style={{ marginBottom: 16 }}>
@@ -107,6 +157,24 @@ export const UsersPage = () => {
                 >
                     Delete
                 </Button>
+                <Button
+                    onClick={onMakeAdmin}
+                    disabled={!selectedRowKeys.length}
+                >
+                    Make admin
+                </Button>
+                <Button
+                    onClick={onRemoveAdmin}
+                    disabled={!selectedRowKeys.length}
+                >
+                    Remove admin
+                </Button>
+                <Button
+                    danger
+                    onClick={onDeleteUnverified}
+                >
+                    Delete unverified
+                </Button>
             </Space>
             <Table
                 rowKey="id"
@@ -117,6 +185,9 @@ export const UsersPage = () => {
                     onChange: setSelectedRowKeys
                 }}
                 columns={columns}
+                onRow={(record) => ({
+                    onClick: () => navigate(`/users/${record.id}`)
+                })}
             />
         </div>
     );

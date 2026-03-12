@@ -3,6 +3,7 @@ import { Card, Row, Col, Table } from "antd";
 import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import {LanguageContext} from "../context/LanguageContext.jsx";
+import InventoryCard from "../components/InventoryCard.jsx";
 
 const Dashboard = () => {
     const [data, setData] = useState(null);
@@ -38,31 +39,30 @@ const Dashboard = () => {
             <Row gutter={[16, 16]}>
                 {data.latest.map(inv => (
                     <Col span={6} key={inv.id}>
-                        <Card
-                            hoverable
-                            title={inv.title}
-                            onClick={() => navigate(`/inventories/${inv.id}`)}
-                        >
-                            {inv.description || inv.category}
-                            <div style={{ marginTop: 8, fontSize: 12 }}>
-                                By {inv.owner.email}
-                            </div>
-                        </Card>
+                        <InventoryCard inventory={inv} />
                     </Col>
                 ))}
             </Row>
 
             <h2 style={{ marginTop: 40 }}>{t.popular}</h2>
 
-            <Table
-                rowKey="id"
-                columns={popularColumns}
-                dataSource={data.popular}
-                pagination={false}
-                onRow={(record) => ({
-                    onClick: () => navigate(`/inventories/${record.id}`)
-                })}
-            />
+            <Row gutter={[16,16]}>
+                {data.popular.map(inv => (
+                    <Col span={6} key={inv.id}>
+                        <InventoryCard inventory={inv} />
+                    </Col>
+                ))}
+            </Row>
+
+            {/*<Table*/}
+            {/*    rowKey="id"*/}
+            {/*    columns={popularColumns}*/}
+            {/*    dataSource={data.popular}*/}
+            {/*    pagination={false}*/}
+            {/*    onRow={(record) => ({*/}
+            {/*        onClick: () => navigate(`/inventories/${record.id}`)*/}
+            {/*    })}*/}
+            {/*/>*/}
 
             <h2 style={{ marginTop: 40 }}>{t.tags}</h2>
 
@@ -72,7 +72,7 @@ const Dashboard = () => {
                         key={tag.id}
                         style={{
                             cursor: "pointer",
-                            fontSize: 12 + tag.inventories.length * 3,
+                            fontSize: 15,
                             padding: "4px 8px",
                             background: "#f0f0f0",
                             borderRadius: 4

@@ -1,6 +1,6 @@
 export const canViewInventory = (user, inventory) => {
     if (!inventory) return false;
-    return !!user; // любой авторизованный может смотреть
+    return !!user;
 };
 
 export const canEditInventory = (user, inventory) => {

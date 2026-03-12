@@ -51,7 +51,6 @@ const FieldsTab = ({ inventoryId }) => {
     };
 
     const handleAdd = () => {
-        // Проверяем, есть ли тип, который можно добавить
         const typeCount = fields.reduce((acc, f) => {
             acc[f.type] = (acc[f.type] || 0) + 1;
             return acc;
@@ -79,7 +78,6 @@ const FieldsTab = ({ inventoryId }) => {
 
     const updateField = (index, key, value) => {
         if (key === "type") {
-            // Проверяем лимит по типу
             const typeCount = fields.reduce((acc, f, i) => {
                 if (i !== index) acc[f.type] = (acc[f.type] || 0) + 1;
                 return acc;

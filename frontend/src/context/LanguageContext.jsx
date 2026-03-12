@@ -6,7 +6,7 @@ const translations = {
     en: {
         search: "Search inventories...",
         dashboard: "Home",
-        create: "Create Inventory",
+        createInventory: "Create Inventory",
         profile: "Profile",
         logout: "Logout",
         language: "Language",
@@ -43,11 +43,22 @@ const translations = {
         save: "Save",
         publicAccessDesc: "Public inventory (all authenticated users have access)",
         addField: "Add Field",
+        totalItems: "Total Items",
+        numericField: "Numeric field",
+        average: "Average",
+        min: "Min",
+        max: "Max",
+        stringField: "String field",
+        mostFrequent: "Most frequent",
+        used: "Used",
+        create: "Create",
+        enterTags: "Enter tags",
+        admin: "Admin panel"
     },
     ru: {
         search: "Поиск инвентарей...",
         dashboard: "Главная",
-        create: "Создать инвентарь",
+        createInventory: "Создать инвентарь",
         profile: "Профиль",
         logout: "Выйти",
         language: "Язык",
@@ -84,6 +95,17 @@ const translations = {
         save: "Сохранить",
         publicAccessDesc: "Публичный инвентарь (доступен всем авторизованным пользователям)",
         addField: "Добавить поле",
+        totalItems: "Всего предметов",
+        numericField: "Числовое поле",
+        average: "Среднее",
+        min: "Мин.",
+        max: "Макс.",
+        stringField: "Строковое поле",
+        mostFrequent: "Самое частое",
+        used: "Используется",
+        create: "Создать",
+        enterTags: "Введите теги",
+        admin: "Панель админа"
     }
 };
 

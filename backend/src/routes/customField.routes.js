@@ -3,7 +3,6 @@ import prisma from "../lib/prisma.js";
 
 const router = express.Router();
 
-// GET fields
 router.get("/:inventoryId", async (req, res) => {
     const inventoryId = Number(req.params.inventoryId);
 
@@ -15,13 +14,11 @@ router.get("/:inventoryId", async (req, res) => {
     res.json(fields);
 });
 
-// BATCH UPDATE
 router.put("/:inventoryId", async (req, res) => {
     const inventoryId = Number(req.params.inventoryId);
     const { fields } = req.body;
 
     try {
-        // Проверка ограничения на количество полей одного типа
         const typeCount = {};
         for (const field of fields) {
             typeCount[field.type] = (typeCount[field.type] || 0) + 1;
@@ -36,13 +33,11 @@ router.put("/:inventoryId", async (req, res) => {
             const existingIds = existing.map(f => f.id);
             const incomingIds = fields.filter(f => f.id).map(f => f.id);
 
-            // 1️⃣ DELETE отсутствующие
             const toDelete = existingIds.filter(id => !incomingIds.includes(id));
             if (toDelete.length) {
                 await tx.customField.deleteMany({ where: { id: { in: toDelete } } });
             }
 
-            // 2️⃣ CREATE новые поля
             for (let i = 0; i < fields.length; i++) {
                 const field = fields[i];
                 if (!field.id) {
@@ -58,16 +53,14 @@ router.put("/:inventoryId", async (req, res) => {
                 }
             }
 
-            // 3️⃣ UPDATE существующих — временно присваиваем уникальные отрицательные order
             const updates = fields.filter(f => f.id);
             for (let i = 0; i < updates.length; i++) {
                 await tx.customField.update({
                     where: { id: updates[i].id },
-                    data: { order: -(i + 1) } // временные уникальные значения
+                    data: { order: -(i + 1) }
                 });
             }
 
-            // 4️⃣ Присваиваем финальные порядки
             for (let i = 0; i < updates.length; i++) {
                 await tx.customField.update({
                     where: { id: updates[i].id },

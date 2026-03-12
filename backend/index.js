@@ -8,6 +8,7 @@ import itemRoutes from "./src/routes/item.routes.js";
 import adminRoutes from "./src/routes/admin.routes.js";
 import homeRoutes from "./src/routes/home.routes.js";
 import searchRoutes from "./src/routes/search.routes.js";
+import fileRoutes from "./src/routes/file.routes.js";
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ app.use("/api/items", itemRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/home", homeRoutes);
 app.use("/api/search", searchRoutes);
+app.use("/api/files", fileRoutes);
 
 app.get("/api/health", (req, res) => {
     res.json({ status: "OK" });

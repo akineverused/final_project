@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { Table, Button, Space } from "antd";
 import api from "../api/axios";
+import {useNavigate} from "react-router-dom";
 
 export const AdminInventoriesPage = () => {
     const [data, setData] = useState([]);
     const [selectedRowKeys, setSelectedRowKeys] = useState([]);
     const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
     useEffect(() => {
         void load();
@@ -53,6 +55,9 @@ export const AdminInventoriesPage = () => {
                     selectedRowKeys,
                     onChange: setSelectedRowKeys
                 }}
+                onRow={(record) => ({
+                    onClick: () => navigate(`/inventories/${record.id}`)
+                })}
             />
         </div>
     );

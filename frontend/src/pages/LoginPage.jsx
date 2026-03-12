@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import cl from "./Loginpage.module.css";
 import { Button, Card, Form, Input, Typography, message } from "antd";
 import { useNavigate } from "react-router-dom";
@@ -11,20 +11,23 @@ export const LoginPage = () => {
     const { login, register, user } = useContext(AuthContext);
     const navigate = useNavigate();
 
+    useEffect(() => {
+        if (!user) return;
+
+        if (user.role === "ADMIN") {
+            navigate("/admin");
+        } else {
+            navigate("/");
+        }
+    }, [user]);
+
     const onFinish = async (values) => {
         try {
             if (mode === "login") {
-                await login(values.email, values.password);
+                await login(values.login, values.password);
                 message.success("Logged in successfully");
-                setTimeout(() => {
-                    if (user?.role === "ADMIN") {
-                        navigate("/admin");
-                    } else {
-                        navigate("/");
-                    }
-                }, 100);
             } else {
-                await register(values.email, values.password);
+                await register(values.email, values.nickname, values.password);
                 message.success("Registered successfully");
                 setMode("login");
             }
@@ -43,16 +46,37 @@ export const LoginPage = () => {
                 </Title>
 
                 <Form layout="vertical" onFinish={onFinish}>
-                    <Form.Item
-                        label="Email"
-                        name="email"
-                        rules={[
-                            { required: true, message: "Please enter your email" },
-                            { type: "email", message: "Invalid email format" }
-                        ]}
-                    >
-                        <Input placeholder="email@example.com" />
-                    </Form.Item>
+                    {mode === "register" && (
+                        <>
+                            <Form.Item
+                                label="Nickname"
+                                name="nickname"
+                                rules={[{ required: true, message: "Please enter your nickname" }]}
+                            >
+                                <Input />
+                            </Form.Item>
+
+                            <Form.Item
+                                label="Email"
+                                name="email"
+                                rules={[{ required: true, message: "Please enter email" }]}
+                            >
+                                <Input />
+                            </Form.Item>
+                        </>
+                    )}
+
+                    {mode === "login" && (
+                        <Form.Item
+                            label="Email or nickname"
+                            name="login"
+                            rules={[
+                                { required: true, message: "Please enter email or nickname" }
+                            ]}
+                        >
+                            <Input />
+                        </Form.Item>
+                    )}
 
                     <Form.Item
                         label="Password"

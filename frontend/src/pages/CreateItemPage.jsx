@@ -3,10 +3,8 @@ import { Form, Input, Button, message, Switch, InputNumber } from "antd";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 
-const { TextArea } = Input;
-
 const CreateItemPage = () => {
-    const { id } = useParams(); // inventoryId
+    const { id } = useParams();
     const [fields, setFields] = useState([]);
     const navigate = useNavigate();
 
@@ -20,20 +18,24 @@ const CreateItemPage = () => {
     };
 
     const onFinish = async (values) => {
-
         const formattedValues = fields.map(field => ({
             customFieldId: field.id,
             type: field.type,
             value: values[`field_${field.id}`] ?? null
         }));
 
-        await api.post("/items", {
-            inventoryId: Number(id),
-            values: formattedValues
-        });
+        try {
+            await api.post("/items", {
+                inventoryId: Number(id),
+                values: formattedValues
+            });
 
-        message.success("Item created");
-        navigate(`/inventories/${id}`);
+            message.success("Item created");
+            navigate(`/inventories/${id}`);
+
+        } catch (err) {
+            message.error(err.response?.data?.message || "Failed to create item");
+        }
     };
 
     return (
@@ -51,6 +53,7 @@ const CreateItemPage = () => {
                                 name={name}
                                 label={field.title}
                                 valuePropName="checked"
+                                initialValue={false}
                             >
                                 <Switch />
                             </Form.Item>
@@ -71,19 +74,6 @@ const CreateItemPage = () => {
                         );
                     }
 
-                    // if (field.type === "TEXT") {
-                    //     return (
-                    //         <Form.Item
-                    //             key={field.id}
-                    //             name={name}
-                    //             label={field.title}
-                    //         >
-                    //             <TextArea rows={4} />
-                    //         </Form.Item>
-                    //     );
-                    // }
-
-                    // STRING (default)
                     return (
                         <Form.Item
                             key={field.id}

@@ -1,4 +1,4 @@
-import { Layout, Button, Input, Dropdown, Menu, Switch } from "antd";
+import {Layout, Button, Input, Dropdown, Menu, Switch, Avatar} from "antd";
 import { Outlet, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { LanguageContext } from "../context/LanguageContext";
@@ -19,6 +19,16 @@ const MainLayout = () => {
             label: t.profile,
             onClick: () => navigate(`/users/${user.id}`)
         },
+        ...(user.role === "ADMIN" && [
+            {
+                type: "divider"
+            },
+            {
+                key: "admin",
+                label: t.admin,
+                onClick: () => navigate("/admin")
+            }
+        ]),
         {
             type: "divider"
         },
@@ -79,7 +89,8 @@ const MainLayout = () => {
             key: "logout",
             label: <span style={{ color: "red" }}>{t.logout}</span>,
             onClick: logout
-        }
+        },
+
     ];
 
     return (
@@ -113,22 +124,19 @@ const MainLayout = () => {
                 />
 
                 <div style={{ display: "flex", gap: 12 }}>
-                    <Button
-                        onClick={() => navigate("/")}
-                    >
-                        {t.dashboard}
-                    </Button>
 
                     <Button
                         onClick={() => navigate("/inventories/create")}
                     >
-                        {t.create}
+                        {t.createInventory}
                     </Button>
 
                     <Dropdown menu={{ items }} trigger={["click"]}>
-                        <Button>
-                            {user.email}
-                        </Button>
+                        <div style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+                            <Avatar>
+                                {user.email[0].toUpperCase()}
+                            </Avatar>
+                        </div>
                     </Dropdown>
                 </div>
             </Header>

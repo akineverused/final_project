@@ -23,9 +23,15 @@ enum FieldType {
 model User {
   id          Int       @id @default(autoincrement())
   email       String    @unique
+  nickname    String    @unique
   password    String
   role        Role      @default(USER)
+
   blocked     Boolean   @default(false)
+
+  verified    Boolean   @default(false)
+  verifyToken String?   @unique
+
   createdAt   DateTime  @default(now())
 
   inventories Inventory[]
@@ -44,10 +50,8 @@ model Inventory {
   version          Int       @default(1)
   createdAt        DateTime  @default(now())
 
-  // для sequence Custom ID
   sequenceCounter  Int       @default(0)
 
-  // конфигурация Custom ID
   customIdConfig   Json?
 
   ownerId          Int

@@ -1,15 +1,24 @@
 import express from "express";
 import prisma from "../lib/prisma.js";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
+import { sendVerificationEmail } from "../lib/mailer.js";
 import jwt from "jsonwebtoken";
 import { protect, adminOnly } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
-// REGISTER
 router.post("/register", async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, nickname } = req.body;
+
+        const existingNickname = await prisma.user.findUnique({
+            where: { nickname }
+        });
+
+        if (existingNickname) {
+            return res.status(400).json({ message: "Nickname already taken" });
+        }
 
         const existingUser = await prisma.user.findUnique({
             where: { email }
@@ -21,20 +30,22 @@ router.post("/register", async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        const verifyToken = crypto.randomUUID();
+
         const user = await prisma.user.create({
             data: {
                 email,
-                password: hashedPassword
+                nickname,
+                password: hashedPassword,
+                verifyToken
             }
         });
 
-        const token = jwt.sign(
-            { id: user.id, role: user.role },
-            process.env.JWT_SECRET,
-            { expiresIn: "1d" }
-        );
+        await sendVerificationEmail(email, verifyToken);
 
-        res.json({ token });
+        res.json({
+            message: "Registered. Please verify your email."
+        });
 
     } catch (error) {
         console.error(error);
@@ -42,13 +53,39 @@ router.post("/register", async (req, res) => {
     }
 });
 
-// LOGIN
+router.get("/verify/:token", async (req, res) => {
+    const { token } = req.params;
+
+    const user = await prisma.user.findUnique({
+        where: { verifyToken: token }
+    });
+
+    if (!user) {
+        return res.status(400).send("Invalid verification link");
+    }
+
+    await prisma.user.update({
+        where: { id: user.id },
+        data: {
+            verified: true,
+            verifyToken: null
+        }
+    });
+
+    res.send("Email confirmed. You can login now.");
+});
+
 router.post("/login", async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { login, password } = req.body;
 
-        const user = await prisma.user.findUnique({
-            where: { email }
+        const user = await prisma.user.findFirst({
+            where: {
+                OR: [
+                    { email: login },
+                    { nickname: login }
+                ]
+            }
         });
 
         if (!user) {
@@ -79,12 +116,10 @@ router.post("/login", async (req, res) => {
     }
 });
 
-// PROTECTED ROUTE
 router.get("/profile", protect, async (req, res) => {
     res.json({ message: "You are authorized", user: req.user });
 });
 
-// поиск пользователей по email
 router.get("/search", protect, async (req, res) => {
     const { q } = req.query;
 

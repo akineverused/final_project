@@ -38,7 +38,6 @@ const ItemsTab = ({ inventory, refresh, isOwner }) => {
         if (!valueObj) return "";
 
         if (valueObj.stringValue !== null) return valueObj.stringValue;
-        if (valueObj.textValue !== null) return valueObj.textValue;
         if (valueObj.numberValue !== null) return valueObj.numberValue;
         if (valueObj.booleanValue !== null)
             return valueObj.booleanValue ? "Yes" : "No";

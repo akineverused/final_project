@@ -2,25 +2,31 @@ import express from "express";
 import prisma from "../lib/prisma.js";
 import { protect } from "../middleware/auth.middleware.js";
 import {canEditInventory, canManageInventory, canViewInventory} from "../../utils/access.js";
+import {deleteImageFromCloud} from "../middleware/upload.middleware.js";
 
 const router = express.Router();
 
 router.post("/", protect, async (req, res) => {
     try {
-        const { title, description, category, isPublic, tags } = req.body;
+        const { title, description, category, isPublic, tags, imageUrl } = req.body;
 
-        // создаём инвентарь
+        if (!req.user.verified) {
+            return res.status(403).json({
+                message: "Verify your email to create inventories"
+            });
+        }
+
         const inventory = await prisma.inventory.create({
             data: {
                 title,
                 description,
                 category,
                 isPublic,
+                imageUrl,
                 ownerId: req.user.id
             }
         });
 
-        // если есть теги
         if (tags?.length) {
             for (const tagName of tags) {
                 const tag = await prisma.tag.upsert({
@@ -62,7 +68,7 @@ router.get("/", async (req, res) => {
     }
 });
 
-router.get("/:id", protect, async (req, res) => {
+router.get("/:id", async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -123,14 +129,12 @@ router.put("/:id", protect, async (req, res) => {
             return res.status(403).json({ message: "Forbidden" });
         }
 
-        // 🔐 Проверка версии вручную
         if (inventory.version !== version) {
             return res.status(409).json({
                 message: "Inventory was modified by another user"
             });
         }
 
-        // создаём/находим теги
         let tagRecords = [];
 
         if (tags?.length) {
@@ -143,6 +147,10 @@ router.put("/:id", protect, async (req, res) => {
                     })
                 )
             );
+        }
+
+        if (inventory.imageUrl && inventory.imageUrl !== imageUrl) {
+            await deleteImageFromCloud(inventory.imageUrl);
         }
 
         const updated = await prisma.inventory.update({
@@ -241,6 +249,10 @@ router.delete("/:id", protect, async (req, res) => {
             return res.status(403).json({ message: "Forbidden" });
         }
 
+        if (inventory.imageUrl) {
+            await deleteImageFromCloud(inventory.imageUrl);
+        }
+
         await prisma.inventory.delete({
             where: { id: inventory.id }
         });
@@ -331,7 +343,6 @@ router.get("/:id/statistics", protect, async (req, res) => {
             string: {}
         };
 
-        // группируем по customField
         for (const field of inventory.fields) {
 
             if (field.type === "NUMBER") {
@@ -387,7 +398,7 @@ router.get("/:id/statistics", protect, async (req, res) => {
     }
 });
 
-router.get("/:id/comments", protect, async (req, res) => {
+router.get("/:id/comments", async (req, res) => {
     const comments = await prisma.comment.findMany({
         where: { inventoryId: Number(req.params.id) },
         include: {
@@ -403,6 +414,12 @@ router.get("/:id/comments", protect, async (req, res) => {
 
 router.post("/:id/comments", protect, async (req, res) => {
     const { content } = req.body;
+
+    if (!req.user.verified) {
+        return res.status(403).json({
+            message: "Verify your email to comment"
+        });
+    }
 
     const comment = await prisma.comment.create({
         data: {

@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import {useContext, useEffect, useState} from "react";
 import { Card, Spin } from "antd";
 import api from "../../api/axios";
+import {LanguageContext} from "../../context/LanguageContext.jsx";
 
 const StatisticsTab = ({ inventoryId }) => {
     const [stats, setStats] = useState(null);
+    const {t} = useContext(LanguageContext);
 
     useEffect(() => {
         fetchStats();
@@ -18,22 +20,22 @@ const StatisticsTab = ({ inventoryId }) => {
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <Card title="Total Items">
+            <Card title={t.totalItems}>
                 {stats.totalItems}
             </Card>
 
             {Object.entries(stats.numeric).map(([field, data]) => (
-                <Card key={field} title={`Numeric field: ${field}`}>
-                    <p>Average: {data.avg.toFixed(2)}</p>
-                    <p>Min: {data.min}</p>
-                    <p>Max: {data.max}</p>
+                <Card key={field} title={`${t.numericField}: ${field}`}>
+                    <p>{t.average}: {data.avg.toFixed(2)}</p>
+                    <p>{t.min}: {data.min}</p>
+                    <p>{t.max}: {data.max}</p>
                 </Card>
             ))}
 
             {Object.entries(stats.string).map(([field, data]) => (
-                <Card key={field} title={`String field: ${field}`}>
-                    <p>Most frequent: {data.mostFrequent}</p>
-                    <p>Used: {data.count} times</p>
+                <Card key={field} title={`${t.stringField}: ${field}`}>
+                    <p>{t.mostFrequent}: {data.mostFrequent}</p>
+                    <p>{t.used}: {data.count} times</p>
                 </Card>
             ))}
         </div>

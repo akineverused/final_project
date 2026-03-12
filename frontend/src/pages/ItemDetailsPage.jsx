@@ -38,7 +38,6 @@ const ItemDetailsPage = () => {
                 const field = fv.customField;
                 const key = `field_${field.id}`;
 
-                // Теперь все текстовые хранятся в stringValue
                 if (fv.booleanValue !== null) initialValues[key] = fv.booleanValue;
                 else if (fv.numberValue !== null) initialValues[key] = fv.numberValue;
                 else if (fv.stringValue !== null) initialValues[key] = fv.stringValue;
@@ -57,7 +56,8 @@ const ItemDetailsPage = () => {
         (
             item.inventory.ownerId === user?.id ||
             user?.role === "ADMIN" ||
-            item.inventory.accessList?.some(a => a.userId === user?.id)
+            item.inventory.accessList?.some(a => a.userId === user?.id) ||
+            item.inventory.isPublic
         );
 
     const handleLike = async () => {
@@ -80,14 +80,11 @@ const ItemDetailsPage = () => {
         const formattedValues = item.fieldValues.map(fv => {
             const field = fv.customField;
             const key = `field_${field.id}`;
-            const value = values[key] ?? null;
 
             return {
-                id: fv.id, // если нужно для апдейта
                 customFieldId: field.id,
-                stringValue: field.type === "STRING" || field.type === "TEXT" ? value : null,
-                numberValue: field.type === "NUMBER" ? value : null,
-                booleanValue: field.type === "BOOLEAN" ? value : null
+                type: field.type,
+                value: values[key] ?? null
             };
         });
 
@@ -143,7 +140,6 @@ const ItemDetailsPage = () => {
                         );
                     }
 
-                    // STRING
                     return (
                         <Form.Item key={field.id} name={name} label={field.title}>
                             <Input disabled={!canWrite} />

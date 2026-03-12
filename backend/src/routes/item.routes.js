@@ -6,9 +6,14 @@ import {generateCustomId} from "../../utils/customIdGenerator.js";
 
 const router = express.Router();
 
-// создать item
 router.post("/", protect, async (req, res) => {
     const { inventoryId, values } = req.body;
+
+    if (!req.user.verified) {
+        return res.status(403).json({
+            message: "Verify your email to create items"
+        });
+    }
 
     const inventory = await prisma.inventory.findUnique({
         where: { id: inventoryId },
@@ -36,7 +41,6 @@ router.post("/", protect, async (req, res) => {
             let customId;
 
             if (!updatedInventory.customIdConfig || updatedInventory.customIdConfig.length === 0) {
-                // fallback если нет конфигурации
                 customId = `ITEM-${sequenceNumber}`;
             } else {
                 customId = generateCustomId(updatedInventory, sequenceNumber);
@@ -55,16 +59,12 @@ router.post("/", protect, async (req, res) => {
                             };
 
                             if (v.value === null || v.value === undefined || v.value === "") {
-                                return base; // ничего не сохраняем
+                                return base;
                             }
 
                             if (v.type === "STRING" || v.type === "SELECT") {
                                 return { ...base, stringValue: v.value };
                             }
-
-                            // if (v.type === "TEXT") {
-                            //     return { ...base, textValue: v.value };
-                            // }
 
                             if (v.type === "NUMBER") {
                                 const num = Number(v.value);
@@ -116,36 +116,39 @@ router.put("/:id", protect, async (req, res) => {
         return res.status(404).json({ message: "Not found" });
     }
 
-    await prisma.itemFieldValue.deleteMany({
-        where: { itemId }
-    });
+    for (const v of values) {
+        const data = {};
 
-    await prisma.itemFieldValue.createMany({
-        data: values.map(v => {
-            const base = {
+        if (v.type === "STRING" || v.type === "TEXT" || v.type === "LINK") {
+            data.stringValue = v.value ?? null;
+        }
+
+        if (v.type === "NUMBER") {
+            data.numberValue =
+                v.value !== null && v.value !== undefined
+                    ? Number(v.value)
+                    : null;
+        }
+
+        if (v.type === "BOOLEAN") {
+            data.booleanValue = Boolean(v.value);
+        }
+
+        await prisma.itemFieldValue.upsert({
+            where: {
+                itemId_customFieldId: {
+                    itemId,
+                    customFieldId: v.customFieldId
+                }
+            },
+            update: data,
+            create: {
                 itemId,
-                customFieldId: v.customFieldId
-            };
-
-            if (v.type === "STRING" || v.type === "SELECT") {
-                return { ...base, stringValue: v.value };
+                customFieldId: v.customFieldId,
+                ...data
             }
-
-            if (v.type === "TEXT") {
-                return { ...base, textValue: v.value };
-            }
-
-            if (v.type === "NUMBER") {
-                return { ...base, numberValue: Number(v.value) };
-            }
-
-            if (v.type === "BOOLEAN") {
-                return { ...base, booleanValue: Boolean(v.value) };
-            }
-
-            return base;
-        })
-    });
+        });
+    }
 
     res.json({ message: "Item updated" });
 });
@@ -164,7 +167,7 @@ router.delete("/:id", protect, async (req, res) => {
     }
 });
 
-router.get("/:id", protect, async (req, res) => {
+router.get("/:id", async (req, res) => {
     const item = await prisma.item.findUnique({
         where: { id: Number(req.params.id) },
         include: {
@@ -183,6 +186,13 @@ router.get("/:id", protect, async (req, res) => {
 });
 
 router.post("/:id/like", protect, async (req, res) => {
+
+    if (!req.user.verified) {
+        return res.status(403).json({
+            message: "Verify your email to like items"
+        });
+    }
+
     try {
         await prisma.like.create({
             data: {
@@ -211,7 +221,7 @@ router.delete("/:id/like", protect, async (req, res) => {
     res.json({ message: "Unliked" });
 });
 
-router.get("/:id/likes", protect, async (req, res) => {
+router.get("/:id/likes", async (req, res) => {
     const itemId = Number(req.params.id);
 
     const count = await prisma.like.count({
