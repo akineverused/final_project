@@ -3,7 +3,8 @@ import { Outlet, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { LanguageContext } from "../context/LanguageContext";
 import { ThemeContext } from "../context/ThemeContext";
-import { useContext } from "react";
+import {useContext, useState} from "react";
+import SupportTicketModal from "../components/SupportTicketModal.jsx";
 
 const { Header, Content } = Layout;
 
@@ -12,12 +13,18 @@ const MainLayout = () => {
     const { user, logout } = useContext(AuthContext);
     const { lang, setLang, t } = useContext(LanguageContext);
     const { isDark, setIsDark } = useContext(ThemeContext);
+    const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
     const items = [
         {
             key: "profile",
             label: t.profile,
             onClick: () => navigate(`/users/${user.id}`)
+        },
+        {
+            key: "support",
+            label: "Create support ticket",
+            onClick: () => setIsSupportModalOpen(true)
         },
         ...(user.role === "ADMIN"
                 ? [
@@ -147,6 +154,11 @@ const MainLayout = () => {
             <Content style={{ padding: 24 }}>
                 <Outlet />
             </Content>
+
+            <SupportTicketModal
+                open={isSupportModalOpen}
+                onClose={() => setIsSupportModalOpen(false)}
+            />
         </Layout>
     );
 };

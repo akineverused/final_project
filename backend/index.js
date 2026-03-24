@@ -9,6 +9,7 @@ import adminRoutes from "./src/routes/admin.routes.js";
 import homeRoutes from "./src/routes/home.routes.js";
 import searchRoutes from "./src/routes/search.routes.js";
 import fileRoutes from "./src/routes/file.routes.js";
+import supportTicketRoutes from "./src/routes/supportTicket.routes.js";
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/home", homeRoutes);
 app.use("/api/search", searchRoutes);
 app.use("/api/files", fileRoutes);
+app.use("/api/support-tickets", supportTicketRoutes);
 
 app.get("/api/health", (req, res) => {
     res.json({ status: "OK" });
